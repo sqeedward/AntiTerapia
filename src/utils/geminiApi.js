@@ -9,111 +9,103 @@
 // const app = initializeApp(firebaseConfig);
 // const ai = getAI(app);
 
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Use your Gemini API key here (store securely in production!)
+const API_KEY = ""; // TODO: Replace with your real key or use env variable
+const genAI = new GoogleGenerativeAI(API_KEY);
+
+// Helper to convert File/Blob to base64
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Mock audio transcription (replace with real STT if needed)
+async function transcribeAudio(audioFile) {
+  // TODO: Integrate with Google Speech-to-Text or Gemini audio if available
+  return "[Transcribed audio text goes here]";
+}
+
+// Test function to verify API connection
+export async function testGeminiConnection() {
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent("Say 'Hello, RoastMyLife!'");
+    const response = await result.response;
+    console.log("Gemini API Test Success:", response.text());
+    return true;
+  } catch (error) {
+    console.error("Gemini API Test Failed:", error);
+    return false;
+  }
+}
+
 export async function getRoast(input, roastLevel, noGoTopics, history) {
   const { text, photo, audio } = input;
   
-  // Determine input type for contextual roasts
-  let inputType = 'text';
-  if (photo) inputType = 'photo';
-  if (audio) inputType = 'audio';
-  if (photo && audio) inputType = 'multimodal';
-  
-  // Mock response for now - replace with actual Gemini API call
-  const mockRoasts = {
-    Light: {
-      text: [
-        "Oh honey, that's... interesting. At least you're trying!",
-        "Well, bless your heart. You do you, I guess.",
-        "That's one way to look at it. Not the right way, but a way."
-      ],
-      photo: [
-        "That outfit is definitely a choice. Bold move!",
-        "Your selfie game needs work, but I appreciate the confidence.",
-        "The background tells a story... and it's not a good one."
-      ],
-      audio: [
-        "Your voice is as unique as your life choices.",
-        "I can hear the uncertainty in your voice. It's adorable.",
-        "That accent? Interesting. Very... interesting."
-      ],
-      multimodal: [
-        "Text, photo, AND audio? Someone's really committed to being roasted.",
-        "You're really going all out here. I respect the dedication.",
-        "This is a full package of roastable content. Impressive."
-      ]
-    },
-    Medium: {
-      text: [
-        "Your life choices are giving me second-hand embarrassment.",
-        "I've seen better decisions made by a coin flip.",
-        "This is why aliens haven't contacted us yet."
-      ],
-      photo: [
-        "That photo is a crime against photography.",
-        "Your fashion sense is stuck in a time warp.",
-        "I've seen better composition in a toddler's finger painting."
-      ],
-      audio: [
-        "Your voice is like nails on a chalkboard, but somehow worse.",
-        "I can hear the desperation in your tone. It's palpable.",
-        "That recording quality matches your life quality - poor."
-      ],
-      multimodal: [
-        "You've really outdone yourself with this multimedia disaster.",
-        "This is peak cringe content. Congratulations?",
-        "You're like a walking, talking, photographing, audio-recording red flag."
-      ]
-    },
-    Brutal: {
-      text: [
-        "Your existence is a cosmic joke and the universe is laughing at you.",
-        "If stupidity was a superpower, you'd be unstoppable.",
-        "I'd roast you harder, but I'm afraid you'd break."
-      ],
-      photo: [
-        "That photo should come with a warning label.",
-        "Your face is a masterpiece of poor life decisions.",
-        "I've seen better-looking roadkill."
-      ],
-      audio: [
-        "Your voice is what nightmares are made of.",
-        "I'd rather listen to a cat being strangled.",
-        "That audio is proof that some people shouldn't be allowed to speak."
-      ],
-      multimodal: [
-        "You're a walking disaster in multiple formats.",
-        "This is peak human failure across all media types.",
-        "You've achieved the impossible - being terrible at everything simultaneously."
-      ]
-    }
-  };
+  // System prompt for Gemini
+  let systemPrompt = `You are a savage, witty roastmaster for the RoastMyLife app. Analyze user inputs (text, photo, audio) for sentiment (boastful, sad, cringe, etc.) and roastable content (job, hobbies, style, fails). Deliver a humorous roast in a snarky tone, matching the user's chosen intensity (Light, Medium, Brutal). Avoid sensitive topics (e.g., family) if flagged. Generate a text roast (100-200 words), suggest a meme template (e.g., Drake Hotline Bling for boastful) with caption, and provide audio roast text for text-to-speech. Reference past inputs (if provided) for callbacks.`;
 
-  const roastLevels = mockRoasts[roastLevel] || mockRoasts.Medium;
-  const inputRoasts = roastLevels[inputType] || roastLevels.text;
-  const randomRoast = inputRoasts[Math.floor(Math.random() * inputRoasts.length)];
-  
-  // Generate contextual meme based on input type
-  const memeTemplates = {
-    text: 'Drake Hotline Bling',
-    photo: 'Distracted Boyfriend',
-    audio: 'Surprised Pikachu',
-    multimodal: 'This Is Fine'
-  };
-  
-  const memeCaptions = {
-    text: "When you think you're deep but...",
-    photo: "When you think you look good but...",
-    audio: "When you think you sound good but...",
-    multimodal: "When you think you're doing great but..."
-  };
-  
-  // Mock response structure
-  return {
-    textRoast: randomRoast,
-    audioRoast: randomRoast, // For text-to-speech
-    meme: { 
-      template: memeTemplates[inputType], 
-      caption: memeCaptions[inputType]
-    },
-  };
+  // Build user prompt
+  let userPrompt = "";
+  if (text) userPrompt += `Text: ${text}\n`;
+  if (photo) userPrompt += `Photo: [User uploaded a photo]\n`;
+  if (audio) userPrompt += `Audio: [User uploaded/recorded audio]\n`;
+  userPrompt += `Roast level: ${roastLevel}. Avoid: ${noGoTopics}. History: ${JSON.stringify(history)}.`;
+
+  try {
+    // Prepare parts for Gemini API
+    let parts = [{ text: systemPrompt + "\n" + userPrompt }];
+
+    // If photo, add as image part
+    if (photo) {
+      const base64Image = await fileToBase64(photo);
+      parts.push({ inlineData: { mimeType: photo.type, data: base64Image } });
+    }
+
+    // If audio, transcribe and add as text (Gemini multimodal audio is not public yet)
+    if (audio) {
+      const audioText = await transcribeAudio(audio);
+      parts.push({ text: `Audio transcript: ${audioText}` });
+    }
+
+    // Call Gemini API with correct model
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent({ contents: [{ role: "user", parts }] });
+    const response = await result.response;
+    const roastText = response.text();
+
+    // Simple meme extraction (look for 'Meme:' in response)
+    let meme = { template: "Drake Hotline Bling", caption: "When you think you're cool but..." };
+    const memeMatch = roastText.match(/Meme:\s*([\w\s]+),\s*['"](.+?)['"]/i);
+    if (memeMatch) {
+      meme = { template: memeMatch[1].trim(), caption: memeMatch[2].trim() };
+    }
+
+    return {
+      textRoast: roastText,
+      audioRoast: roastText, // For TTS
+      meme,
+    };
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+    
+    // Fallback to mock response if API fails
+    const fallbackRoasts = {
+      Light: "Oh honey, that's... interesting. At least you're trying!",
+      Medium: "Your life choices are giving me second-hand embarrassment.",
+      Brutal: "Your existence is a cosmic joke and the universe is laughing at you."
+    };
+    
+    return {
+      textRoast: fallbackRoasts[roastLevel] || fallbackRoasts.Medium,
+      audioRoast: fallbackRoasts[roastLevel] || fallbackRoasts.Medium,
+      meme: { template: "Drake Hotline Bling", caption: "When you think you're cool but..." },
+    };
+  }
 } 

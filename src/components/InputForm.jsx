@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 
-function InputForm({ onSubmit }) {
+function InputForm({ onSubmit, isLoading = false }) {
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState(null);
   const [audio, setAudio] = useState(null);
@@ -67,6 +67,7 @@ function InputForm({ onSubmit }) {
           value={text} 
           onChange={(e) => setText(e.target.value)}
           rows="4"
+          disabled={isLoading}
         />
       </div>
 
@@ -77,6 +78,7 @@ function InputForm({ onSubmit }) {
           accept="image/*" 
           onChange={(e) => setPhoto(e.target.files[0])}
           className="w-full p-2 border border-gray-300 rounded-md"
+          disabled={isLoading}
         />
       </div>
 
@@ -86,11 +88,12 @@ function InputForm({ onSubmit }) {
           <button
             type="button"
             onClick={isRecording ? stopRecording : startRecording}
+            disabled={isLoading}
             className={`px-4 py-2 rounded-md font-medium ${
               isRecording 
                 ? 'bg-red-600 text-white hover:bg-red-700' 
                 : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
+            } disabled:opacity-50`}
           >
             {isRecording ? '⏹️ Stop Recording' : '🎤 Start Recording'}
           </button>
@@ -101,6 +104,7 @@ function InputForm({ onSubmit }) {
           onChange={handleFileAudioChange}
           className="w-full p-2 border border-gray-300 rounded-md"
           placeholder="Or upload an audio file"
+          disabled={isLoading}
         />
         {audioURL && (
           <div className="mt-2">
@@ -115,6 +119,7 @@ function InputForm({ onSubmit }) {
           className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-transparent" 
           value={roastLevel} 
           onChange={(e) => setRoastLevel(e.target.value)}
+          disabled={isLoading}
         >
           <option value="Light">😊 Light Roast</option>
           <option value="Medium">🔥 Medium Roast</option>
@@ -129,14 +134,16 @@ function InputForm({ onSubmit }) {
           placeholder="e.g., family, health, job loss" 
           value={noGoTopics} 
           onChange={(e) => setNoGoTopics(e.target.value)} 
+          disabled={isLoading}
         />
       </div>
 
       <button 
         type="submit" 
-        className="w-full bg-gradient-to-r from-red-500 to-red-700 text-white p-3 rounded-md font-bold text-lg hover:from-red-600 hover:to-red-800 transition-all duration-200 transform hover:scale-105"
+        disabled={isLoading}
+        className="w-full bg-gradient-to-r from-red-500 to-red-700 text-white p-3 rounded-md font-bold text-lg hover:from-red-600 hover:to-red-800 transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        🔥 Get Roasted! 🔥
+        {isLoading ? '🔥 Roasting... 🔥' : '🔥 Get Roasted! 🔥'}
       </button>
     </form>
   );
