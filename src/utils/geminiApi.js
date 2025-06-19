@@ -63,11 +63,20 @@ export async function getRoast(input, roastLevel, noGoTopics, history) {
   // System prompt for Gemini with meme instructions
   let systemPrompt = `You are a savage, witty roastmaster for the RoastMyLife app. Analyze user inputs (text, photo, audio) for sentiment (boastful, sad, cringe, etc.) and roastable content (job, hobbies, style, fails). Deliver a humorous roast in a snarky tone, matching the user's chosen intensity (Light, Medium, Brutal). Avoid sensitive topics (e.g., family) if flagged. 
 
-Generate TWO separate roasts:
-1. TEXT_ROAST: A detailed written roast (100-200 words) with clever wordplay and references
-2. AUDIO_ROAST: A short, punchy roast (20-40 words) optimized for speech delivery - use shorter sentences, repetition, and dramatic pauses
+Generate your response in this EXACT format:
 
-${createMemePrompt()}`;
+TEXT_ROAST: [Write a detailed roast (100-200 words) with clever wordplay and references. Do NOT include meme information here.]
+
+AUDIO_ROAST: [Write a short, punchy roast (20-40 words) optimized for speech delivery. Do NOT include meme information here.]
+
+Meme: [meme_name], Caption: [short_caption]
+
+Available memes:
+${createMemePrompt()}
+
+CRITICAL: You MUST include the "Meme:" line at the end with a meme name from the list above and a short caption. The meme name must be exactly one of: crying, side_eye, blinking_meme, cat_laughing_at_you, chill_guys, no_god_please_no, this_is_fine, man_what, sponge_bob_chicken, what, think, doge_side_eye
+
+IMPORTANT: Keep meme selection separate from roast content. Do not mention memes in the TEXT_ROAST or AUDIO_ROAST sections.`;
 
   // Build user prompt
   let userPrompt = "";
@@ -104,14 +113,14 @@ ${createMemePrompt()}`;
     let meme = { template: "crying", caption: "When life roasts you back" };
 
     // Try to extract TEXT_ROAST and AUDIO_ROAST sections
-    const textRoastMatch = fullResponse.match(/TEXT_ROAST[:\s]*(.*?)(?=AUDIO_ROAST|Meme:|$)/is);
-    const audioRoastMatch = fullResponse.match(/AUDIO_ROAST[:\s]*(.*?)(?=Meme:|$)/is);
+    const textRoastMatch = fullResponse.match(/TEXT_ROAST:\s*(.*?)(?=AUDIO_ROAST:|Meme:|$)/is);
+    const audioRoastMatch = fullResponse.match(/AUDIO_ROAST:\s*(.*?)(?=Meme:|$)/is);
     
     if (textRoastMatch) {
       textRoast = textRoastMatch[1].trim();
     } else {
-      // Fallback: use the full response as text roast
-      textRoast = fullResponse;
+      // Fallback: use the full response as text roast, but remove meme info
+      textRoast = fullResponse.replace(/Meme:\s*[\w_]+,?\s*Caption:\s*['"][^'"]*['"]/gi, '').trim();
     }
 
     if (audioRoastMatch) {
@@ -125,13 +134,28 @@ ${createMemePrompt()}`;
       }
     }
 
-    // Parse meme selection from response
-    const memeMatch = fullResponse.match(/Meme:\s*([\w_]+),\s*Caption:\s*['"](.+?)['"]/i);
+    // Parse meme selection from response - look for the specific format
+    console.log("Full Gemini response:", fullResponse); // Debug log
+    
+    // Try multiple regex patterns to catch different formats
+    let memeMatch = fullResponse.match(/Meme:\s*([\w_]+),?\s*Caption:\s*['"]([^'"]*)['"]/i);
+    
+    if (!memeMatch) {
+      // Try alternative format without quotes
+      memeMatch = fullResponse.match(/Meme:\s*([\w_]+),?\s*Caption:\s*([^\n\r]+)/i);
+    }
+    
+    if (!memeMatch) {
+      // Try just looking for "Meme:" followed by a meme name
+      memeMatch = fullResponse.match(/Meme:\s*([\w_]+)/i);
+    }
     
     if (memeMatch) {
       const memeName = memeMatch[1].toLowerCase();
-      const caption = memeMatch[2].trim();
+      const caption = memeMatch[2] ? memeMatch[2].trim() : "Perfect caption for this roast!";
       const memeData = getMemeByName(memeName);
+      
+      console.log(`Found meme match: "${memeName}" with caption: "${caption}"`); // Debug log
       
       if (memeData) {
         meme = {
@@ -139,19 +163,36 @@ ${createMemePrompt()}`;
           caption: caption,
           file: memeData.file
         };
+        console.log(`Successfully matched meme: ${memeName}`); // Debug log
+      } else {
+        console.log(`Meme "${memeName}" not found in database, using fallback`);
       }
     } else {
+      console.log("No meme match found in response, using content-based suggestions"); // Debug log
       // Fallback: suggest memes based on content
       const suggestions = suggestMemes(textRoast, roastLevel);
+      console.log("Content-based suggestions:", suggestions); // Debug log
+      
       if (suggestions.length > 0) {
-        const memeData = getMemeByName(suggestions[0]);
-        meme = {
-          template: suggestions[0],
-          caption: "AI couldn't pick a caption, but this meme fits!",
-          file: memeData.file
-        };
+        // Randomly select from top 3 suggestions instead of always using the first
+        const randomIndex = Math.floor(Math.random() * Math.min(3, suggestions.length));
+        const selectedMeme = suggestions[randomIndex];
+        const memeData = getMemeByName(selectedMeme);
+        
+        if (memeData) {
+          meme = {
+            template: selectedMeme,
+            caption: "AI picked this meme just for you!",
+            file: memeData.file
+          };
+          console.log(`Using content-based meme: ${selectedMeme}`); // Debug log
+        }
       }
     }
+
+    // Clean up any remaining meme references from the roasts
+    textRoast = textRoast.replace(/Meme:\s*[\w_]+,?\s*Caption:\s*['"][^'"]*['"]/gi, '').trim();
+    audioRoast = audioRoast.replace(/Meme:\s*[\w_]+,?\s*Caption:\s*['"][^'"]*['"]/gi, '').trim();
 
     return {
       textRoast: textRoast,

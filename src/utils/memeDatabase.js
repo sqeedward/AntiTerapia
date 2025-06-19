@@ -90,10 +90,43 @@ export function suggestMemes(content, roastLevel) {
       }
     }
     
-    // Adjust score based on roast level
-    if (roastLevel === 'Brutal' && (name.includes('laughing') || name.includes('crying'))) {
-      score += 1;
+    // Check for specific keywords in content
+    const keywords = {
+      'crying': ['sad', 'cry', 'tears', 'pathetic', 'depressing', 'miserable'],
+      'side_eye': ['suspicious', 'doubt', 'judge', 'side eye', 'questionable'],
+      'blinking_meme': ['confused', 'what', 'huh', 'disbelief', 'processing'],
+      'cat_laughing_at_you': ['laugh', 'funny', 'ridiculous', 'joke', 'mocking'],
+      'chill_guys': ['calm', 'relax', 'overreact', 'dramatic', 'chill'],
+      'no_god_please_no': ['desperate', 'please', 'no', 'begging', 'despair'],
+      'this_is_fine': ['fine', 'okay', 'denial', 'ignore', 'pretend'],
+      'man_what': ['what', 'confused', 'disbelief', 'man what'],
+      'sponge_bob_chicken': ['afraid', 'scared', 'chicken', 'coward', 'back down'],
+      'what': ['what', 'confused', 'disbelief', 'huh'],
+      'think': ['think', 'thought', 'contemplate', 'philosophy', 'deep'],
+      'doge_side_eye': ['suspicious', 'cute', 'doge', 'side eye', 'judgment']
+    };
+    
+    if (keywords[name]) {
+      for (const keyword of keywords[name]) {
+        if (contentLower.includes(keyword)) {
+          score += 1;
+        }
+      }
     }
+    
+    // Adjust score based on roast level
+    if (roastLevel === 'Brutal') {
+      if (name.includes('laughing') || name.includes('crying') || name.includes('side_eye')) {
+        score += 1;
+      }
+    } else if (roastLevel === 'Light') {
+      if (name.includes('think') || name.includes('blinking') || name.includes('what')) {
+        score += 1;
+      }
+    }
+    
+    // Add some randomness to prevent always picking the same meme
+    score += Math.random() * 0.5;
     
     if (score > 0) {
       suggestions.push({ name, meme, score });
@@ -103,7 +136,7 @@ export function suggestMemes(content, roastLevel) {
   // Sort by score and return top suggestions
   return suggestions
     .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
+    .slice(0, 5) // Return more suggestions for variety
     .map(s => s.name);
 }
 
