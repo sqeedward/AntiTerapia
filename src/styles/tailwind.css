@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom meme font (optional) */
+.font-meme {
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  letter-spacing: 1px;
+} 

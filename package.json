@@ -1,0 +1,18 @@
+{
+  "name": "roastmylife",
+  "version": "1.0.0",
+  "description": "RoastMyLife: Get roasted by AI with memes, audio, and more!",
+  "main": "src/App.jsx",
+  "scripts": {
+    "dev": "vite"
+  },
+  "dependencies": {
+    "firebase": "^10.12.2",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.5.2",
+    "vite": "^4.0.0"
+  }
+}
