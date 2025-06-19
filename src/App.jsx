@@ -5,10 +5,12 @@ import RoastSummary from './components/RoastSummary';
 import HistoryView from './components/HistoryView';
 import AudioSettings from './components/AudioSettings';
 import { getRoast, testGeminiConnection } from './utils/geminiApi';
+import { suggestMemes, memeDatabase } from './utils/memeDatabase';
 
 function App() {
   const [roast, setRoast] = useState(null);
   const [meme, setMeme] = useState(null);
+  const [memeName, setMemeName] = useState(null);
   const [history, setHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -33,6 +35,10 @@ function App() {
       setRoast(response.textRoast);
       setMeme(response.meme);
       setHistory([...history, { input, output: response }]);
+      // Meme selection based on feeling of prompt/roast
+      const content = input.text || response.textRoast || '';
+      const memeSuggestions = suggestMemes(content, roastLevel);
+      setMemeName(memeSuggestions.length > 0 ? memeSuggestions[0] : null);
       // --- AI PROMPT GENERATION PLACEHOLDER ---
       // Replace the following with your AI backend call to generate these values:
       setSummary({
@@ -111,8 +117,19 @@ function App() {
                   />
                 </div>
               )}
-              {roast && <RoastOutput roast={roast} roastLevel={currentRoastLevel} darkMode={true} />}
-              <RoastSummary meme={meme} tip={summary.tip} lookScore={summary.lookScore} productivityScore={summary.productivityScore} roastScore={summary.roastScore} />
+              {roast && <RoastOutput roast={roast} roastLevel={currentRoastLevel} darkMode={true} audioUrl={meme && meme.audioUrl ? meme.audioUrl : (typeof roast === 'object' && roast.audioUrl ? roast.audioUrl : null)} />}
+              {/* Meme from database based on feeling */}
+              {memeName && (
+                <div className="flex flex-col items-center my-4">
+                  <img
+                    src={memeDatabase[memeName].file}
+                    alt={memeDatabase[memeName].description}
+                    className="max-h-48 rounded-lg border border-gray-600 shadow mb-2"
+                  />
+                  <div className="text-gray-300 text-sm italic">{memeDatabase[memeName].description}</div>
+                </div>
+              )}
+              <RoastSummary tip={summary.tip} lookScore={summary.lookScore} productivityScore={summary.productivityScore} roastScore={summary.roastScore} />
             </div>
           )}
           {/* History */}

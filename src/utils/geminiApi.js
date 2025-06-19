@@ -198,6 +198,8 @@ IMPORTANT: Keep meme selection separate from roast content. Do not mention memes
       textRoast: textRoast,
       audioRoast: audioRoast,
       meme,
+      // Add audioUrl if your backend returns it
+      audioUrl: response.audioUrl || null
     };
   } catch (error) {
     console.error("Gemini API Error:", error);
@@ -231,4 +233,4 @@ IMPORTANT: Keep meme selection separate from roast content. Do not mention memes
       },
     };
   }
-} 
+}

@@ -147,4 +147,4 @@ export function createMemePrompt() {
     .join('\n');
     
   return `Available memes:\n${memeList}\n\nChoose the most appropriate meme based on the roast content and provide a short, funny caption (max 50 characters). Format your response as: "Meme: [meme_name], Caption: [caption]"`;
-} 
+}

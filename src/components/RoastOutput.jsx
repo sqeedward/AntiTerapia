@@ -25,6 +25,16 @@ function RoastOutput({ roast, roastLevel = 'Medium', darkMode = false }) {
     }
   }, [roast, autoPlay]);
 
+  // Extract a one-liner from the roast for TTS
+  const getOneLiner = (text) => {
+    if (!text) return '';
+    // Try to get the first sentence or a short line
+    const match = text.match(/[^.!?\n]+[.!?\n]/);
+    if (match && match[0].length <= 120) return match[0].trim();
+    // Otherwise, take the first 120 chars
+    return text.slice(0, 120).split(/[.!?\n]/)[0] + '...';
+  };
+
   const handlePlayAudio = async () => {
     if (isPlaying) {
       stopRoastAudio();
@@ -32,7 +42,8 @@ function RoastOutput({ roast, roastLevel = 'Medium', darkMode = false }) {
       setIsPaused(false);
     } else {
       try {
-        await speakRoast(roast, roastLevel);
+        const oneLiner = getOneLiner(roast);
+        await speakRoast(oneLiner, roastLevel);
         setIsPlaying(true);
         setIsPaused(false);
       } catch (error) {
@@ -217,4 +228,4 @@ function RoastOutput({ roast, roastLevel = 'Medium', darkMode = false }) {
   );
 }
 
-export default RoastOutput; 
+export default RoastOutput;
