@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import InputForm from './components/InputForm';
 import RoastOutput from './components/RoastOutput';
-import MemeDisplay from './components/MemeDisplay';
+import RoastSummary from './components/RoastSummary';
 import HistoryView from './components/HistoryView';
 import AudioSettings from './components/AudioSettings';
 import { getRoast, testGeminiConnection } from './utils/geminiApi';
@@ -14,38 +14,33 @@ function App() {
   const [error, setError] = useState(null);
   const [currentRoastLevel, setCurrentRoastLevel] = useState('Medium');
   const [showAudioSettings, setShowAudioSettings] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [photo, setPhoto] = useState(null);
+  const [summary, setSummary] = useState({ tip: '', lookScore: '', productivityScore: '', roastScore: '' });
 
-  // Initialize dark mode from localStorage
+  // Always enable dark mode
   useEffect(() => {
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(savedDarkMode);
+    document.documentElement.classList.add('dark');
   }, []);
-
-  // Update document class when dark mode changes
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('darkMode', darkMode.toString());
-  }, [darkMode]);
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
 
   const handleSubmit = async (input, roastLevel, noGoTopics) => {
     setIsLoading(true);
     setError(null);
     setCurrentRoastLevel(roastLevel);
-    
+    setPhoto(input.photo || null);
     try {
       const response = await getRoast(input, roastLevel, noGoTopics, history);
       setRoast(response.textRoast);
       setMeme(response.meme);
       setHistory([...history, { input, output: response }]);
+      // --- AI PROMPT GENERATION PLACEHOLDER ---
+      // Replace the following with your AI backend call to generate these values:
+      setSummary({
+        tip: 'Remember to take breaks and drink water!',
+        lookScore: '8/10',
+        productivityScore: '7/10',
+        roastScore: '🔥 9/10',
+      });
     } catch (err) {
       console.error('Error getting roast:', err);
       setError('Failed to get roast. Please try again.');
@@ -73,135 +68,111 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      darkMode 
-        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
-        : 'bg-gradient-to-br from-red-50 via-orange-50 to-yellow-50'
-    }`}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex flex-col">
       {/* Background Pattern */}
-      <div className={`absolute inset-0 transition-opacity duration-300 ${
-        darkMode ? 'opacity-10' : 'opacity-5'
-      }`}>
+      <div className="absolute inset-0 opacity-10 pointer-events-none">
         <div className="absolute inset-0" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ff0000' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
         }}></div>
       </div>
-
-      <div className="relative z-10 container mx-auto p-4 max-w-4xl">
+      <div className="relative z-10 flex flex-col flex-1 max-w-4xl mx-auto w-full">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-4 mt-4">
           <div className="inline-block">
-            <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 bg-clip-text text-transparent mb-2 animate-pulse">
+            <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 bg-clip-text text-transparent mb-2 animate-pulse">
               🔥 AntiTerapia 🔥
             </h1>
             <div className="h-1 bg-gradient-to-r from-red-500 via-orange-400 to-yellow-400 rounded-full"></div>
           </div>
-          <p className={`mt-4 text-lg font-medium transition-colors duration-300 ${
-            darkMode ? 'text-gray-300' : 'text-gray-600'
-          }`}>
+          <p className="mt-2 text-base font-medium text-gray-300">
             Let AI roast your life with savage humor, memes, and audio!
           </p>
         </div>
-
-        {/* Control Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-          <button 
-            onClick={handleTestAPI}
-            disabled={isLoading}
-            className="group relative px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="relative z-10 flex items-center gap-2">
-              {isLoading ? '🔄 Testing...' : '🧪 Test Gemini API'}
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-700 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-          </button>
-
-          <button
-            onClick={() => setShowAudioSettings(true)}
-            className="group relative px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-          >
-            <span className="relative z-10 flex items-center gap-2">
-              ⚙️ Audio Settings
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-700 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-          </button>
-
-          <button
-            onClick={toggleDarkMode}
-            className="group relative px-6 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-full font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-          >
-            <span className="relative z-10 flex items-center gap-2">
-              {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-700 to-gray-800 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-          </button>
-        </div>
-
         {/* Error Display */}
         {error && (
-          <div className={`mb-6 p-4 rounded-xl text-center shadow-lg transform transition-all duration-300 ${
-            error.includes('✅') 
-              ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-200 dark:from-green-900 dark:to-emerald-900 dark:text-green-200 dark:border-green-700' 
-              : 'bg-gradient-to-r from-red-100 to-pink-100 text-red-800 border border-red-200 dark:from-red-900 dark:to-pink-900 dark:text-red-200 dark:border-red-700'
-          }`}>
+          <div className="mb-2 p-2 rounded-xl text-center shadow-lg bg-gradient-to-r from-red-900 to-pink-900 text-red-200 border border-red-700">
             <div className="flex items-center justify-center gap-2">
               <span className="text-xl">{error.includes('✅') ? '🎉' : '⚠️'}</span>
               <span className="font-medium">{error}</span>
             </div>
           </div>
         )}
-
-        {/* Main Content */}
-        <div className="space-y-8">
-          {/* Input Form */}
-          <div className={`backdrop-blur-sm rounded-2xl shadow-xl border transition-colors duration-300 ${
-            darkMode 
-              ? 'bg-gray-800/80 border-gray-700/20' 
-              : 'bg-white/80 border-white/20'
-          } p-6`}>
-            <InputForm onSubmit={handleSubmit} isLoading={isLoading} darkMode={darkMode} />
-          </div>
-
+        {/* Output/History Scrollable Area */}
+        <div className="flex-1 overflow-y-auto rounded-xl bg-gray-900/80 border border-gray-800 p-4 mb-2 shadow-inner">
           {/* Results */}
-          {roast && (
-            <div className="space-y-6 animate-fadeIn">
-              <RoastOutput roast={roast} roastLevel={currentRoastLevel} darkMode={darkMode} />
-              <MemeDisplay meme={meme} darkMode={darkMode} />
+          {(roast || photo) && (
+            <div className="space-y-4 animate-fadeIn">
+              {photo && (
+                <div className="flex justify-center">
+                  <img
+                    src={URL.createObjectURL(photo)}
+                    alt="Uploaded or captured"
+                    className="max-h-64 rounded-xl border border-gray-700 shadow-lg object-contain bg-black"
+                  />
+                </div>
+              )}
+              {roast && <RoastOutput roast={roast} roastLevel={currentRoastLevel} darkMode={true} />}
+              <RoastSummary meme={meme} tip={summary.tip} lookScore={summary.lookScore} productivityScore={summary.productivityScore} roastScore={summary.roastScore} />
             </div>
           )}
-
           {/* History */}
-          <HistoryView history={history} darkMode={darkMode} />
+          <HistoryView history={history} darkMode={true} />
         </div>
-
+        {/* Control Buttons */}
+        <div className="flex flex-row gap-2 justify-center items-center mb-2">
+          <button 
+            onClick={handleTestAPI}
+            disabled={isLoading}
+            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full font-semibold shadow hover:scale-105 transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? '🔄 Testing...' : '🧪 Test Gemini API'}
+          </button>
+          <button
+            onClick={() => setShowSettings((prev) => !prev)}
+            className="px-4 py-2 bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-full font-semibold shadow hover:scale-105 transition-all duration-200 text-sm"
+          >
+            ⚙️ Settings
+          </button>
+        </div>
+        {/* Collapsible Settings Panel */}
+        {showSettings && (
+          <div className="mb-2 p-4 rounded-2xl shadow-xl border bg-gray-900/90 border-gray-700 animate-fadeIn"> 
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+              <button
+                onClick={() => setShowAudioSettings(true)}
+                className="px-5 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-full font-semibold shadow hover:scale-105 transition-all duration-200"
+              >
+                🎵 Audio Settings
+              </button>
+            </div>
+          </div>
+        )}
         {/* Footer */}
-        <div className="text-center mt-12 mb-6">
-          <p className={`text-sm transition-colors duration-300 ${
-            darkMode ? 'text-gray-400' : 'text-gray-500'
-          }`}>
+        <div className="text-center mt-2 mb-2">
+          <p className="text-xs text-gray-500">
             Built with ❤️ for the Google Hackathon | Powered by Gemini AI
           </p>
         </div>
       </div>
-
+      {/* Fixed Bottom Input Bar */}
+      <div className="fixed bottom-0 left-0 w-full bg-gray-950/95 border-t border-gray-800 shadow-2xl z-50 py-3">
+        <div className="max-w-4xl mx-auto px-2">
+          <InputForm onSubmit={handleSubmit} isLoading={isLoading} />
+        </div>
+      </div>
       {/* Audio Settings Modal */}
       <AudioSettings 
         isOpen={showAudioSettings} 
         onClose={() => setShowAudioSettings(false)} 
-        darkMode={darkMode}
+        darkMode={true}
       />
-
       {/* Loading Overlay */}
       {isLoading && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className={`rounded-2xl p-8 shadow-2xl text-center transition-colors duration-300 ${
-            darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'
-          }`}>
+          <div className="rounded-2xl p-8 shadow-2xl text-center bg-gray-800 text-white">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-500 mx-auto mb-4"></div>
-            <h3 className={`text-xl font-semibold mb-2 ${
-              darkMode ? 'text-white' : 'text-gray-800'
-            }`}>🔥 Roasting in Progress...</h3>
-            <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+            <h3 className="text-xl font-semibold mb-2 text-white">🔥 Roasting in Progress...</h3>
+            <p className="text-gray-300">
               AI is analyzing your content and preparing the perfect roast!
             </p>
           </div>
@@ -211,4 +182,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
